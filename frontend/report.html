@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Report Elder</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <h2>Report Vulnerable Elder</h2>
+  <p>Provide basic location details. The system will route assistance automatically.</p>
+
+  <input type="number" id="lat" placeholder="Latitude">
+  <input type="number" id="lon" placeholder="Longitude">
+
+  <select id="condition">
+    <option value="injured">Injured</option>
+    <option value="hungry">Hungry</option>
+    <option value="alone">Alone</option>
+  </select>
+
+  <button onclick="sendReport()">Route Case</button>
+
+  <pre id="output"></pre>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

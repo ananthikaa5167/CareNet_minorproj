@@ -1,0 +1,122 @@
+/* Global Styling */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(120deg, #e0f2ff, #f9fbff);
+    padding: 40px;
+    color: #333;
+}
+
+/* Page Container */
+.container {
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.8s ease-in;
+}
+
+/* Headings */
+h1, h2 {
+    color: #1f3c88;
+    margin-bottom: 10px;
+}
+
+p {
+    color: #555;
+    margin-bottom: 20px;
+}
+
+/* Navigation Bar */
+nav {
+    margin: 20px 0;
+}
+
+nav a {
+    padding: 10px 18px;
+    margin-right: 10px;
+    text-decoration: none;
+    background: #1f7aec;
+    color: white;
+    border-radius: 25px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+nav a:hover {
+    background: #145ecb;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(31, 122, 236, 0.4);
+}
+
+/* Inputs & Select */
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0 18px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+    transition: border 0.3s;
+}
+
+input:focus, select:focus {
+    border-color: #1f7aec;
+    outline: none;
+}
+
+/* Buttons */
+button {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #1f7aec, #4facfe);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 20px rgba(79, 172, 254, 0.5);
+}
+
+/* Output Box */
+pre {
+    background: #f4f8ff;
+    padding: 15px;
+    border-radius: 10px;
+    border-left: 5px solid #1f7aec;
+    margin-top: 20px;
+    font-size: 14px;
+    white-space: pre-wrap;
+}
+
+/* Cards for NGO Dashboard */
+.card {
+    background: #ffffff;
+    padding: 18px;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    transition: transform 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+}
+
+/* Smooth Page Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
