@@ -3,81 +3,31 @@ import pandas as pd
 from algorithm.routing_algorithm import route_vulnerability_case
 from data.sample_inputs import ngos
 from auth import init_db, register_user, login_user
+from database import (
+    init_case_table,
+    insert_case,
+    fetch_cases,
+    assign_volunteer,
+    update_case_status
+)
 
-# ---------- PAGE CONFIG ----------
-st.set_page_config(page_title="CareNet Dashboard", layout="wide")
+# ---------- CONFIG ----------
+st.set_page_config(page_title="CareNet", layout="wide")
 init_db()
+init_case_table()
 
-# ---------- ADVANCED UI STYLES ----------
-st.markdown("""
-<style>
-
-/* Background gradient */
-.stApp {
-    background: linear-gradient(135deg, #020617, #0f172a);
-    color: #e5e7eb;
-}
-
-/* Title gradient */
-.main-title {
-    font-size: 44px;
-    font-weight: 700;
-    background: linear-gradient(90deg,#22c55e,#3b82f6,#a855f7);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-/* Glass card */
-.card {
-    padding: 24px;
-    border-radius: 18px;
-    background: rgba(255,255,255,0.06);
-    backdrop-filter: blur(14px);
-    border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    transition: all 0.25s ease;
-}
-
-/* Hover animation */
-.card:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-}
-
-/* Buttons */
-.stButton>button {
-    border-radius: 12px;
-    background: linear-gradient(90deg,#22c55e,#3b82f6);
-    color: white;
-    border: none;
-    padding: 0.6em 1.2em;
-    font-weight: 600;
-}
-.stButton>button:hover {
-    background: linear-gradient(90deg,#16a34a,#2563eb);
-}
-
-/* Sidebar */
-section[data-testid="stSidebar"] {
-    background: rgba(15,23,42,0.9);
-    backdrop-filter: blur(10px);
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-# ---------- SESSION STATE ----------
+# ---------- SESSION ----------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.role = None
+    st.session_state.username = None
 
 # =====================================================
-# 🔐 LOGIN & REGISTER PAGE
+# LOGIN
 # =====================================================
 if not st.session_state.logged_in:
 
-    st.markdown('<p class="main-title">CareNet Login</p>', unsafe_allow_html=True)
-
+    st.title("CareNet Login")
     menu = st.radio("Select Option", ["Login", "Register"])
 
     if menu == "Login":
@@ -89,12 +39,12 @@ if not st.session_state.logged_in:
             if role:
                 st.session_state.logged_in = True
                 st.session_state.role = role
+                st.session_state.username = username
                 st.rerun()
             else:
                 st.error("Invalid credentials")
 
     else:
-        st.subheader("Register New User")
         username = st.text_input("New Username")
         password = st.text_input("New Password", type="password")
         role = st.selectbox("Role", ["admin", "volunteer", "reporter"])
@@ -103,21 +53,22 @@ if not st.session_state.logged_in:
             if register_user(username, password, role):
                 st.success("Registered successfully")
             else:
-                st.error("Username already exists")
+                st.error("Username exists")
 
     st.stop()
 
 # =====================================================
-# 🧭 DASHBOARD
+# DASHBOARD
 # =====================================================
 role = st.session_state.role
+username = st.session_state.username
 
-st.sidebar.title("🧭 CareNet")
+st.sidebar.title("CareNet")
 
 if role == "admin":
-    pages = ["Home", "Routing", "NGOs", "Reports", "Volunteers", "Analytics"]
+    pages = ["Home", "Routing", "Reports", "Analytics"]
 elif role == "volunteer":
-    pages = ["Home", "Routing", "Reports"]
+    pages = ["Home", "My Cases"]
 else:
     pages = ["Home", "Routing"]
 
@@ -126,109 +77,126 @@ module = st.sidebar.radio("Navigate", pages)
 if st.sidebar.button("Logout"):
     st.session_state.logged_in = False
     st.session_state.role = None
+    st.session_state.username = None
     st.rerun()
 
 # ================= HOME =================
 if module == "Home":
-
-    st.markdown('<p class="main-title">CareNet Control Center</p>', unsafe_allow_html=True)
-    st.write("AI‑assisted coordination platform for community welfare and assistance routing.")
-
-    if role == "admin":
-        st.subheader("👩‍💼 Admin Overview")
-
-        col1, col2, col3 = st.columns(3)
-        col1.markdown('<div class="card">📊 Analytics Dashboard<br><small>Monitor system performance</small></div>', unsafe_allow_html=True)
-        col2.markdown('<div class="card">📄 Case Management<br><small>Track all reports</small></div>', unsafe_allow_html=True)
-        col3.markdown('<div class="card">👥 User Administration<br><small>Manage volunteers & reporters</small></div>', unsafe_allow_html=True)
-
-    elif role == "volunteer":
-        st.subheader("🤝 Volunteer Panel")
-
-        col1, col2 = st.columns(2)
-        col1.markdown('<div class="card">🚑 Active Assignments<br><small>View cases needing help</small></div>', unsafe_allow_html=True)
-        col2.markdown('<div class="card">📍 Nearby Requests<br><small>Locate assistance areas</small></div>', unsafe_allow_html=True)
-
-    else:
-        st.subheader("🧑‍🤝‍🧑 Reporter Panel")
-
-        col1, col2 = st.columns(2)
-        col1.markdown('<div class="card">📝 Submit Case<br><small>Report vulnerable individuals</small></div>', unsafe_allow_html=True)
-        col2.markdown('<div class="card">📊 Track Requests<br><small>Monitor report status</small></div>', unsafe_allow_html=True)
+    st.title("CareNet Control Center")
+    st.write("AI‑assisted platform for routing and managing cases.")
 
 # ================= ROUTING =================
 elif module == "Routing":
-    st.header("🚑 Vulnerability Routing")
+    st.header("Route Case")
 
-    lat = st.number_input("Latitude", value=12.9716)
-    lon = st.number_input("Longitude", value=80.2200)
+    lat = st.number_input("Latitude", value=12.97)
+    lon = st.number_input("Longitude", value=80.22)
     condition = st.selectbox("Condition", ["injured", "hungry", "alone"])
-    time_delay = st.slider("Time Delay (hours)", 1, 10, 2)
+    delay = st.slider("Delay", 1, 10, 2)
 
     if st.button("Route Case"):
-        report = {
-            "id": 1,
-            "lat": lat,
-            "lon": lon,
-            "condition": condition,
-            "time_delay": time_delay
-        }
+        report = {"id": 1, "lat": lat, "lon": lon,
+                  "condition": condition, "time_delay": delay}
 
         result = route_vulnerability_case(report, ngos)
 
-        st.success("Routing Completed")
-        st.metric("Priority Score", result["priority_score"])
-        st.write("Assigned NGO:", result["assigned_ngo"])
-        st.write("Status:", result["status"])
-        st.map(pd.DataFrame([{"lat": lat, "lon": lon}]))
+        insert_case(
+            lat,
+            lon,
+            condition,
+            delay,
+            result["priority_score"],
+            result["assigned_ngo"],
+            "Pending"
+        )
 
-# ================= NGOs =================
-elif module == "NGOs":
-    st.header("🏥 NGO Directory")
-    ngo_df = pd.DataFrame(ngos)
-    st.dataframe(ngo_df)
-    st.map(ngo_df)
+        st.success("Case Routed")
+        st.write(result)
 
-# ================= REPORTS =================
+# ================= ADMIN CASE MANAGEMENT =================
 elif module == "Reports":
-    st.header("📄 Case Reports")
+    st.header("Case Management")
 
-    reports = [
-        {"Case ID": 1, "Condition": "Injured", "Priority": "High"},
-        {"Case ID": 2, "Condition": "Hungry", "Priority": "Medium"}
-    ]
+    data = fetch_cases()
 
-    st.table(pd.DataFrame(reports))
+    if data:
+        df = pd.DataFrame(data, columns=[
+            "ID","Latitude","Longitude","Condition","Delay",
+            "Priority","NGO","Volunteer","Status"
+        ])
+        st.dataframe(df)
 
-# ================= VOLUNTEERS =================
-elif module == "Volunteers":
-    st.header("🤝 Volunteer Module")
+        st.subheader("Update Case")
 
-    name = st.text_input("Volunteer Name")
-    skill = st.text_input("Skill")
+        case_id = st.selectbox("Case ID", df["ID"])
+        volunteer = st.text_input("Assign Volunteer")
+        status = st.selectbox("Status", ["Pending", "In Progress", "Resolved"])
 
-    if st.button("Add Volunteer"):
-        st.success(f"{name} added successfully!")
+        col1, col2 = st.columns(2)
+
+        if col1.button("Assign"):
+            assign_volunteer(case_id, volunteer)
+            st.success("Volunteer assigned")
+            st.rerun()
+
+        if col2.button("Update Status"):
+            update_case_status(case_id, status)
+            st.success("Status updated")
+            st.rerun()
+
+# ================= VOLUNTEER DASHBOARD =================
+elif module == "My Cases":
+    st.header("My Assigned Cases")
+
+    data = fetch_cases()
+
+    if data:
+        df = pd.DataFrame(data, columns=[
+            "ID","Latitude","Longitude","Condition","Delay",
+            "Priority","NGO","Volunteer","Status"
+        ])
+
+        my_cases = df[df["Volunteer"] == username]
+
+        if not my_cases.empty:
+            st.dataframe(my_cases)
+
+            st.subheader("Workflow Status")
+
+            for _, row in my_cases.iterrows():
+                st.write(f"### Case {row['ID']}")
+                st.progress(
+                    33 if row["Status"] == "Pending"
+                    else 66 if row["Status"] == "In Progress"
+                    else 100
+                )
+                st.write(f"Current Status: **{row['Status']}**")
+        else:
+            st.info("No assigned cases")
 
 # ================= ANALYTICS =================
 elif module == "Analytics":
-    st.header("📊 Evaluation Metrics")
+    st.header("System Analytics")
 
-    data = {
-        "Condition": ["injured", "hungry", "alone", "injured", "hungry"],
-        "Priority": [9, 6, 4, 8, 5],
-        "Status": ["ASSIGNED", "ASSIGNED", "ASSIGNED", "ASSIGNED", "ASSIGNED"]
-    }
+    data = fetch_cases()
 
-    df = pd.DataFrame(data)
+    if data:
+        df = pd.DataFrame(data, columns=[
+            "ID","Latitude","Longitude","Condition","Delay",
+            "Priority","NGO","Volunteer","Status"
+        ])
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Cases", len(df))
-    col2.metric("Average Priority", round(df["Priority"].mean(), 2))
-    col3.metric("Routing Success Rate", f"{(df['Status']=='ASSIGNED').mean()*100:.1f}%")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Cases", len(df))
+        col2.metric("Avg Priority", round(df["Priority"].mean(),2))
+        col3.metric("Resolved %",
+                    f"{(df['Status']=='Resolved').mean()*100:.1f}%")
 
-    st.subheader("Priority Distribution")
-    st.bar_chart(df["Priority"])
+        st.subheader("Cases by Condition")
+        st.bar_chart(df["Condition"].value_counts())
 
-    st.subheader("Condition Distribution")
-    st.bar_chart(df["Condition"].value_counts())
+        st.subheader("Status Distribution")
+        st.bar_chart(df["Status"].value_counts())
+
+    else:
+        st.info("No data yet")
